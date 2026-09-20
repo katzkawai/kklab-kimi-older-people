@@ -82,3 +82,29 @@ def parse_countries(text):
     if len(rows) != 10:
         raise ValueError(f"国際比較表の行数が想定外です: {len(rows)} 行 (想定 10 行)")
     return rows
+
+
+def parse_prefectures(xlsx_path=XLSX_PATH):
+    """人口推計 第3表 (2024-10-01 現在、都道府県・年齢3区分) から高齢化率を算出。単位は千人。"""
+    wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+    ws = wb["第3表"]
+    national, prefs = None, []
+    for row in ws.iter_rows(values_only=True):
+        a, b, c = row[0], row[1], row[2]
+        under15, working, elderly, elderly75 = row[4], row[5], row[6], row[7]
+        if isinstance(a, str) and a.strip().startswith("全国"):
+            national = {"name": "全国", "under15": under15, "age15_64": working,
+                        "pop65": elderly, "pop75": elderly75}
+        elif isinstance(b, str) and re.fullmatch(r"\d{2}", b.strip()) and isinstance(c, str):
+            name = c.strip().replace("　", "")
+            total = under15 + working + elderly
+            prefs.append({
+                "code": b.strip(), "name": name,
+                "under15": under15, "age15_64": working,
+                "pop65": elderly, "pop75": elderly75, "total": total,
+                "rate65": round(elderly / total * 100, 1),
+                "rate75": round(elderly75 / total * 100, 1),
+            })
+    if national is None or len(prefs) != 47:
+        raise ValueError(f"都道府県データの抽出に失敗: national={national is not None}, 件数={len(prefs)}")
+    return {"national": national, "prefectures": prefs}

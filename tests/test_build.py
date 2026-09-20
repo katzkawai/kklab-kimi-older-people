@@ -49,3 +49,12 @@ def test_parse_countries(text):
 def test_parse_age_detail_year_not_found(text):
     with pytest.raises(ValueError, match="見つかりません"):
         build.parse_age_detail(text, 1999)
+
+
+def test_parse_prefectures():
+    pref = build.parse_prefectures(RAW / "05k2024-3.xlsx")
+    assert len(pref["prefectures"]) == 47
+    akita = next(p for p in pref["prefectures"] if p["name"] == "秋田県")
+    assert akita["rate65"] == 39.5
+    assert pref["national"]["pop65"] == 36243  # 単位: 千人
+    assert pref["national"]["pop65"] // 10 == 3624
