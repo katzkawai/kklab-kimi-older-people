@@ -44,3 +44,8 @@ def test_parse_countries(text):
     assert len(countries) == 10
     assert countries[0] == {"rank": 1, "name": "日本", "total": 12262, "pop65": 3624, "rate65": 29.6}
     assert countries[1]["name"] == "イタリア" and countries[1]["rate65"] == 25.6
+
+
+def test_parse_age_detail_year_not_found(text):
+    with pytest.raises(ValueError, match="見つかりません"):
+        build.parse_age_detail(text, 1999)

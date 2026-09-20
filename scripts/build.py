@@ -46,7 +46,9 @@ def parse_trend(text):
 def parse_age_detail(text, year=2026):
     """表1: 指定年の年齢区分別人口 (万人) と割合 (%) を男女別に抽出する。"""
     lines = text.splitlines()
-    start = next(i for i, l in enumerate(lines) if l.strip() == f"{year}年")
+    start = next((i for i, l in enumerate(lines) if l.strip() == f"{year}年"), None)
+    if start is None:
+        raise ValueError(f"表1の{year}年ブロックが見つかりません")
     pop, ratio = {}, {}
     for line in lines[start + 1:]:
         if re.match(r"^\s*\d{4}年\s*$", line):
