@@ -25,6 +25,8 @@ TREND_RE = re.compile(
     re.M,
 )
 
+COUNTRY_RE = re.compile(r"^\s*(\d{1,2})\s+(\S+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s*$", re.M)
+
 
 def parse_trend(text):
     """表2: 65歳以上人口及び割合の推移 (1950-2050)。人口は万人、割合は%。"""
@@ -38,4 +40,43 @@ def parse_trend(text):
         })
     if len(rows) != 22:
         raise ValueError(f"推移表の行数が想定外です: {len(rows)} 行 (想定 22 行)")
+    return rows
+
+
+def parse_age_detail(text, year=2026):
+    """表1: 指定年の年齢区分別人口 (万人) と割合 (%) を男女別に抽出する。"""
+    lines = text.splitlines()
+    start = next(i for i, l in enumerate(lines) if l.strip() == f"{year}年")
+    pop, ratio = {}, {}
+    for line in lines[start + 1:]:
+        if re.match(r"^\s*\d{4}年\s*$", line):
+            break
+        m = re.match(r"^\s*(男女計|男|女)\s+(.+)$", line)
+        if not m:
+            continue
+        label, numstr = m.group(1), m.group(2)
+        nums = numstr.split()
+        if len(nums) != len(AGE_COLUMNS):
+            raise ValueError(f"表1の列数が想定外です: {year}年 {label} {len(nums)} 列")
+        (ratio if "." in numstr else pop)[label] = [
+            float(n) if "." in numstr else int(n) for n in nums
+        ]
+    if len(pop) != 3 or len(ratio) != 3:
+        raise ValueError(f"表1の{year}年ブロックの行が不足: pop={list(pop)}, ratio={list(ratio)}")
+    return {"population": pop, "ratio": ratio}
+
+
+def parse_countries(text):
+    """表3: 65歳以上人口の割合 上位10か国 (2026年)。人口は万人。"""
+    start = text.find("上位 10 か国")
+    if start == -1:
+        raise ValueError("表3の見出しが見つかりません")
+    end = text.find("資料", start)
+    rows = []
+    for m in COUNTRY_RE.finditer(text[start:end]):
+        rank, name, total, pop65, rate65 = m.groups()
+        rows.append({"rank": int(rank), "name": name,
+                     "total": int(total), "pop65": int(pop65), "rate65": float(rate65)})
+    if len(rows) != 10:
+        raise ValueError(f"国際比較表の行数が想定外です: {len(rows)} 行 (想定 10 行)")
     return rows

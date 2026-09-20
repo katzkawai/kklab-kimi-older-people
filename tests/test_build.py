@@ -25,3 +25,22 @@ def test_parse_trend_known_values(text):
     assert by_year[2026]["pop65"] == 3624
     assert by_year[2026]["rate65"] == 29.6
     assert by_year[2050]["rate65"] == 37.1
+
+
+def test_parse_age_detail(text):
+    age = build.parse_age_detail(text, 2026)
+    i65 = build.AGE_COLUMNS.index("age65")
+    i75 = build.AGE_COLUMNS.index("age75")
+    assert age["population"]["男女計"][i65] == 3624
+    assert age["ratio"]["男女計"][i65] == 29.6
+    assert age["population"]["男女計"][i75] == 2168
+    assert age["ratio"]["男女計"][i75] == 17.7
+    assert age["population"]["男"][i65] == 1571
+    assert age["population"]["女"][i65] == 2054
+
+
+def test_parse_countries(text):
+    countries = build.parse_countries(text)
+    assert len(countries) == 10
+    assert countries[0] == {"rank": 1, "name": "日本", "total": 12262, "pop65": 3624, "rate65": 29.6}
+    assert countries[1]["name"] == "イタリア" and countries[1]["rate65"] == 25.6
