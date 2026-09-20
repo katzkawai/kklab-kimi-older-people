@@ -162,7 +162,8 @@ def build_data():
 
 def generate_html(data):
     template = TEMPLATE.read_text(encoding="utf-8")
-    return template.replace("__DATA__", json.dumps(data, ensure_ascii=False))
+    payload = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
+    return template.replace("__DATA__", payload)
 
 
 def main():
