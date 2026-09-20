@@ -1,2 +1,3 @@
 .superpowers/
 data/raw/*.pdf
+__pycache__/
