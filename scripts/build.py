@@ -108,3 +108,68 @@ def parse_prefectures(xlsx_path=XLSX_PATH):
     if national is None or len(prefs) != 47:
         raise ValueError(f"都道府県データの抽出に失敗: national={national is not None}, 件数={len(prefs)}")
     return {"national": national, "prefectures": prefs}
+
+
+def build_data():
+    """全データを統合し、公式既知値 (統計トピックス No.149) でアサートする。"""
+    text = PDF_TEXT.read_text(encoding="utf-8")
+    trend = parse_trend(text)
+    age = parse_age_detail(text, 2026)
+    countries = parse_countries(text)
+    pref = parse_prefectures()
+
+    i65, i75 = AGE_COLUMNS.index("age65"), AGE_COLUMNS.index("age75")
+    t2026 = next(r for r in trend if r["year"] == 2026)
+    prev = next(r for r in trend if r["year"] == 2025)
+    assert trend[0]["year"] == 1950 and trend[0]["rate65"] == 4.9
+    assert trend[-1]["year"] == 2050 and trend[-1]["rate65"] == 37.1
+    assert t2026["pop65"] == 3624 and t2026["rate65"] == 29.6
+    assert age["population"]["男女計"][i65] == 3624
+    assert age["ratio"]["男女計"][i65] == 29.6
+    assert age["population"]["男女計"][i75] == 2168
+    assert age["ratio"]["男女計"][i75] == 17.7
+    assert countries[0]["name"] == "日本" and countries[0]["rate65"] == 29.6
+    assert next(p for p in pref["prefectures"] if p["name"] == "秋田県")["rate65"] == 39.5
+    assert pref["national"]["pop65"] == 36243
+
+    national_total = (pref["national"]["under15"] + pref["national"]["age15_64"]
+                      + pref["national"]["pop65"])
+    detail_keys = AGE_COLUMNS[3:]  # age65..age100
+    return {
+        "asof": "2026年9月15日現在",
+        "prefAsof": "2024年10月1日現在",
+        "summary": {
+            "pop65": t2026["pop65"], "rate65": t2026["rate65"],
+            "pop65Diff": t2026["pop65"] - prev["pop65"],
+            "rate65Diff": round(t2026["rate65"] - prev["rate65"], 1),
+            "pop75": age["population"]["男女計"][i75],
+            "rate75": age["ratio"]["男女計"][i75],
+            "male65": age["population"]["男"][i65],
+            "female65": age["population"]["女"][i65],
+        },
+        "trend": trend,
+        "ageDetail": {
+            "labels": ["65歳以上", "70歳以上", "75歳以上", "80歳以上",
+                       "85歳以上", "90歳以上", "95歳以上", "100歳以上"],
+            "male": [age["population"]["男"][AGE_COLUMNS.index(k)] for k in detail_keys],
+            "female": [age["population"]["女"][AGE_COLUMNS.index(k)] for k in detail_keys],
+        },
+        "prefectures": pref["prefectures"],
+        "nationalRate65": round(pref["national"]["pop65"] / national_total * 100, 1),
+        "countries": countries,
+    }
+
+
+def generate_html(data):
+    template = TEMPLATE.read_text(encoding="utf-8")
+    return template.replace("__DATA__", json.dumps(data, ensure_ascii=False))
+
+
+def main():
+    html = generate_html(build_data())
+    OUT_PATH.write_text(html, encoding="utf-8")
+    print(f"OK: {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes)")
+
+
+if __name__ == "__main__":
+    main()

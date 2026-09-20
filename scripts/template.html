@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日本の高齢者人口ダッシュボード | 総務省統計局のデータより</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root { --ink:#1f2937; --sub:#6b7280; --accent:#c2410c; --blue:#2563eb; --line:#e5e7eb; --bg:#f8fafc; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:24px 16px; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin:0 0 6px; }
+  .asof { color:var(--sub); font-size:.85rem; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:20px 0; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .card .label { font-size:.8rem; color:var(--sub); }
+  .card .value { font-size:1.8rem; font-weight:700; margin:4px 0; }
+  .card .sub2 { font-size:.85rem; color:var(--accent); }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:20px; }
+  .panel h2 { font-size:1.05rem; margin:0 0 8px; }
+  .panel .note { font-size:.78rem; color:var(--sub); margin:8px 0 0; }
+  .chart-box { position:relative; }
+  #box-trend { height:340px; }
+  #box-pref { height:1000px; }
+  #box-age, #box-world { height:320px; }
+  footer { color:var(--sub); font-size:.8rem; padding:24px 16px 48px; }
+  footer a { color:var(--blue); }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>日本の高齢者人口ダッシュボード</h1>
+  <div class="asof">総務省統計局「統計からみた我が国の高齢者」(統計トピックス No.149、令和8年9月20日公表) — <span id="asof"></span>推計</div>
+</div></header>
+<main class="wrap">
+  <section class="cards" id="cards"></section>
+  <div class="panel">
+    <h2>65歳以上人口と高齢化率の推移（1950年〜2050年）</h2>
+    <div class="chart-box" id="box-trend"><canvas id="trend"></canvas></div>
+    <p class="note">2030年以降（破線）は国立社会保障・人口問題研究所「日本の将来推計人口（令和5年推計）」出生中位・死亡中位推計。</p>
+  </div>
+  <div class="panel">
+    <h2>都道府県別 高齢化率（65歳以上人口の割合）</h2>
+    <div class="chart-box" id="box-pref"><canvas id="pref"></canvas></div>
+    <p class="note">総務省統計局「人口推計」<span id="pref-asof"></span>（確報）。全国は <span id="national-rate"></span>%。</p>
+  </div>
+  <div class="panel">
+    <h2>高齢者人口の内訳（男女別）</h2>
+    <div class="chart-box" id="box-age"><canvas id="age"></canvas></div>
+    <p class="note">「○歳以上」は累計の階級。単位は万人。</p>
+  </div>
+  <div class="panel">
+    <h2>国際比較：65歳以上人口の割合（人口4000万以上の39か国中 上位10か国）</h2>
+    <div class="chart-box" id="box-world"><canvas id="world"></canvas></div>
+    <p class="note">日本は人口推計の2026年9月15日現在。他国は国連 World Population Prospects 2024 に基づく2026年7月1日現在の推計値。</p>
+  </div>
+</main>
+<footer><div class="wrap">
+  <p>出典: <a href="https://www.stat.go.jp/data/topics/topi1490.html">総務省統計局 統計トピックス No.149「統計からみた我が国の高齢者」（令和8年9月20日公表）</a> ／ <a href="https://www.stat.go.jp/data/jinsui/2024np/index.html">人口推計（2024年10月1日現在）</a></p>
+  <p>本ページは非公式の可視化です。都道府県別データのみ基準日が異なります（<span id="pref-asof2"></span>）。</p>
+</div></footer>
+<script>
+const DATA = __DATA__;
+
+document.getElementById("asof").textContent = DATA.asof;
+document.getElementById("pref-asof").textContent = DATA.prefAsof;
+document.getElementById("pref-asof2").textContent = DATA.prefAsof;
+document.getElementById("national-rate").textContent = DATA.nationalRate65;
+
+const S = DATA.summary;
+const cards = [
+  { label: "65歳以上人口", value: S.pop65.toLocaleString() + "万人", sub: "（" + DATA.asof + "）" },
+  { label: "高齢化率（総人口に占める割合）", value: S.rate65 + "%", sub: "過去最高" },
+  { label: "65歳以上人口の前年差", value: (S.pop65Diff >= 0 ? "+" : "") + S.pop65Diff + "万人", sub: "高齢化率は " + (S.rate65Diff >= 0 ? "+" : "") + S.rate65Diff.toFixed(1) + "pt" },
+  { label: "75歳以上人口", value: S.pop75.toLocaleString() + "万人", sub: "総人口の " + S.rate75 + "%" },
+];
+document.getElementById("cards").innerHTML = cards.map(c =>
+  `<div class="card"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub2">${c.sub}</div></div>`
+).join("");
+
+const years = DATA.trend.map(r => r.year);
+const splitIdx = years.indexOf(2030);
+const dashed = ctx => ctx.p1DataIndex >= splitIdx ? [5, 4] : undefined;
+const pop = key => DATA.trend.map(r => r[key]);
+new Chart(document.getElementById("trend"), {
+  type: "line",
+  data: { labels: years, datasets: [
+    { label: "65歳以上人口", data: pop("pop65"), borderColor: "#c2410c", backgroundColor: "#c2410c", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
+    { label: "うち70歳以上", data: pop("pop70"), borderColor: "#ea8b55", backgroundColor: "#ea8b55", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
+    { label: "うち75歳以上", data: pop("pop75"), borderColor: "#f2c194", backgroundColor: "#f2c194", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
+    { label: "高齢化率（右軸）", data: DATA.trend.map(r => r.rate65), borderColor: "#2563eb", backgroundColor: "#2563eb", yAxisID: "y1", borderWidth: 2, pointRadius: 0, tension: .2, segment: { borderDash: dashed } },
+  ]},
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom" } },
+    scales: {
+      y: { title: { display: true, text: "人口（万人）" }, suggestedMin: 0, suggestedMax: 4000 },
+      y1: { position: "right", title: { display: true, text: "割合（%）" }, min: 0, max: 40, grid: { drawOnChartArea: false } },
+      x: { ticks: { autoSkip: true, maxTicksLimit: 16 } },
+    },
+  },
+});
+
+const prefs = [...DATA.prefectures].sort((a, b) => b.rate65 - a.rate65);
+new Chart(document.getElementById("pref"), {
+  type: "bar",
+  data: { labels: prefs.map(p => p.name), datasets: [{
+    data: prefs.map(p => p.rate65),
+    backgroundColor: prefs.map((p, i) => i === 0 ? "#c2410c" : "#2563eb"),
+  }]},
+  options: {
+    indexAxis: "y", responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.x}%（65歳以上 ${(prefs[c.dataIndex].pop65 / 10).toLocaleString()}万人）` } } },
+    scales: { x: { title: { display: true, text: "%" }, suggestedMax: 40 } },
+  },
+});
+
+const A = DATA.ageDetail;
+new Chart(document.getElementById("age"), {
+  type: "bar",
+  data: { labels: A.labels, datasets: [
+    { label: "男", data: A.male, backgroundColor: "#2563eb" },
+    { label: "女", data: A.female, backgroundColor: "#f59e0b" },
+  ]},
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom" } },
+    scales: { y: { title: { display: true, text: "人口（万人）" } } },
+  },
+});
+
+const W = DATA.countries;
+new Chart(document.getElementById("world"), {
+  type: "bar",
+  data: { labels: W.map(c => c.name), datasets: [{
+    data: W.map(c => c.rate65),
+    backgroundColor: W.map(c => c.name === "日本" ? "#c2410c" : "#94a3b8"),
+  }]},
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y}%` } } },
+    scales: { y: { max: 32, title: { display: true, text: "%" } } },
+  },
+});
+</script>
+</body>
+</html>
