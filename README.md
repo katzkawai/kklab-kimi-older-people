@@ -2,6 +2,8 @@
 
 総務省統計局の公開データから、日本の高齢者 (65歳以上) 人口を可視化したダッシュボードです。
 
+このサイトは Kimi K3 (Kimi Code CLI) で構築しました。
+
 **公開ページ:** https://katzkawai.org/kklab-kimi-older-people/
 
 ## データ出典
