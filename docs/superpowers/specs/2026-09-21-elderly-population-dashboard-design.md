@@ -36,14 +36,20 @@
 ```
 kklab-kimi-older-people/
 ├── data/raw/           # ダウンロード元ファイル (PDF/Excel)。PDF は .gitignore 対象
-│   └── topi149_01.txt  # pdftotext 抽出テキスト (コミット対象)
+│   ├── topi149_01.txt  # pdftotext 抽出テキスト (コミット対象)
+│   └── 05k2024-3.xlsx  # 人口推計 第3表 (コミット対象)
 ├── scripts/
-│   ├── fetch.py        # 元データのダウンロード (再取得用。uv run、依存は PEP723 インライン)
-│   └── build.py        # データ抽出 → 集計 → index.html 生成 (uv run)
+│   ├── fetch.py        # 元データのダウンロード (stdlib のみ。pdftotext でテキスト化)
+│   ├── build.py        # データ抽出 → 集計 → index.html 生成 (uv run、依存は PEP723 インライン)
+│   └── template.html   # ページテンプレート (__DATA__ プレースホルダにJSONを埋め込む)
+├── tests/
+│   └── test_build.py   # パーサのテスト (pytest、公式既知値との照合)
 ├── index.html          # 生成物。GitHub Pages の公開ルート (コミット対象)
 ├── README.md           # データ出典・基準日・再生成手順
-├── .gitignore          # .superpowers/ など
-└── docs/superpowers/specs/2026-09-21-elderly-population-dashboard-design.md
+├── .gitignore          # .superpowers/、data/raw/*.pdf、__pycache__/
+└── docs/superpowers/
+    ├── specs/2026-09-21-elderly-population-dashboard-design.md
+    └── plans/2026-09-21-elderly-population-dashboard.md
 ```
 
 ### データフロー
