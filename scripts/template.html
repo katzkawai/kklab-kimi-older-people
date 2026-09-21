@@ -90,6 +90,7 @@ new Chart(document.getElementById("trend"), {
     { label: "65歳以上人口", data: pop("pop65"), borderColor: "#c2410c", backgroundColor: "#c2410c", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
     { label: "うち70歳以上", data: pop("pop70"), borderColor: "#ea8b55", backgroundColor: "#ea8b55", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
     { label: "うち75歳以上", data: pop("pop75"), borderColor: "#f2c194", backgroundColor: "#f2c194", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
+    { label: "うち80歳以上", data: pop("pop80"), borderColor: "#f9e3ce", backgroundColor: "#f9e3ce", yAxisID: "y", pointRadius: 2, tension: .2, segment: { borderDash: dashed } },
     { label: "高齢化率（右軸）", data: DATA.trend.map(r => r.rate65), borderColor: "#2563eb", backgroundColor: "#2563eb", yAxisID: "y1", borderWidth: 2, pointRadius: 0, tension: .2, segment: { borderDash: dashed } },
   ]},
   options: {
